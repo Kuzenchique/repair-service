@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ТехноРемонт — сервисный центр</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c2430'/%3E%3Cpath d='M9 22l8-8m2-5a4 4 0 0 0-4 5l-6 6a2 2 0 1 0 3 3l6-6a4 4 0 0 0 5-4l-2.5 1.5L18.5 11z' stroke='%23f59f00' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar__inner">
+      <div class="brand">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1l-5.6 5.6a1.8 1.8 0 1 0 2.6 2.6l5.6-5.6a4 4 0 0 0 5.1-5.4l-2.4 2.4-2.3-.6-.6-2.3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        </span>
+        <div>
+          <div class="brand__name">ТехноРемонт</div>
+          <div class="brand__sub">Сервисный центр по ремонту компьютерной техники</div>
+        </div>
+      </div>
+      <div class="services" id="services" title="Состояние компонентов системы">
+        <span class="svc" data-svc="frontend"><i></i>Frontend</span>
+        <span class="svc" data-svc="backend"><i></i>Backend</span>
+        <span class="svc" data-svc="db"><i></i>PostgreSQL</span>
+        <span class="svc" data-svc="web_service"><i></i>Web-сервис</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- ============ Калькулятор (Web-сервис) ============ -->
+    <section class="panel-grid">
+      <div class="card">
+        <div class="card__head">
+          <span class="step">1</span>
+          <div>
+            <h2>Расчёт стоимости ремонта</h2>
+            <p class="muted">Выберите устройство и симптомы — Web-сервис рассчитает ориентировочную цену</p>
+          </div>
+        </div>
+
+        <form id="estimate-form" autocomplete="off">
+          <label class="field">
+            <span class="field__label">Тип устройства</span>
+            <select id="device" required></select>
+          </label>
+
+          <fieldset class="field">
+            <legend class="field__label">Симптомы неисправности <span class="muted" id="symptom-count"></span></legend>
+            <div class="symptoms" id="symptoms"><div class="muted">Загрузка справочника…</div></div>
+          </fieldset>
+
+          <fieldset class="field">
+            <legend class="field__label">Срочность</legend>
+            <div class="segmented" id="urgency"></div>
+          </fieldset>
+
+          <button type="submit" class="btn btn--primary btn--block" id="btn-estimate">
+            Рассчитать стоимость
+          </button>
+        </form>
+      </div>
+
+      <div class="card card--result" id="result">
+        <div class="empty" id="result-empty">
+          <svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true"><rect x="8" y="6" width="32" height="36" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 15h18M15 22h18M15 29h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <p>Здесь появится расчёт: перечень вероятных работ, диапазон цены и срок ремонта.</p>
+        </div>
+        <div id="result-body" hidden></div>
+      </div>
+    </section>
+
+    <!-- ============ Заявки (БД) ============ -->
+    <section class="card">
+      <div class="card__head card__head--row">
+        <div class="card__head">
+          <span class="step">2</span>
+          <div>
+            <h2>Заявки на обслуживание</h2>
+            <p class="muted">Данные из базы данных PostgreSQL</p>
+          </div>
+        </div>
+        <button class="btn btn--dark" id="btn-load">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          Загрузить заявки из БД
+        </button>
+      </div>
+
+      <div class="stats" id="stats">
+        <div class="stat"><span class="stat__label">Всего заявок</span><span class="stat__value" data-k="total">—</span></div>
+        <div class="stat"><span class="stat__label">В работе</span><span class="stat__value" data-k="open">—</span></div>
+        <div class="stat"><span class="stat__label">Готово к выдаче</span><span class="stat__value" data-k="ready">—</span></div>
+        <div class="stat"><span class="stat__label">Средняя оценка</span><span class="stat__value" data-k="avg_estimate">—</span></div>
+        <div class="stat"><span class="stat__label">Выручка (выдано)</span><span class="stat__value" data-k="revenue">—</span></div>
+      </div>
+
+      <div class="filters">
+        <input type="search" id="search" placeholder="Поиск: номер, клиент, телефон, модель">
+        <select id="status-filter"><option value="">Все статусы</option></select>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>№ / дата</th>
+              <th>Клиент</th>
+              <th>Устройство</th>
+              <th>Симптомы и диагноз</th>
+              <th class="num">Оценка, ₽</th>
+              <th>Статус</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="requests">
+            <tr><td colspan="7" class="table__empty">Нажмите «Загрузить заявки из БД», чтобы получить данные</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap footer muted">
+    Frontend (nginx) → Backend (Flask REST API) → PostgreSQL + Web-сервис расчёта стоимости · Docker Compose
+  </footer>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

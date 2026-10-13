@@ -1,0 +1,86 @@
+# Сервисный центр «ТехноРемонт»: ремонт компьютерной техники
+# 4 контейнера: db (PostgreSQL), web-service (расчёт стоимости), backend (REST API), frontend (nginx)
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: repair-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-repair_db}
+      POSTGRES_USER: ${POSTGRES_USER:-repair_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-repair_pass}
+    volumes:
+      - pgdata:/var/lib/postgresql/data                       # данные сохраняются между перезапусками
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro  # схема и первичные данные
+    ports:
+      - "${DB_HOST_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - repair-net
+
+  web-service:
+    build: ./web-service
+    container_name: repair-web-service
+    restart: unless-stopped
+    ports:
+      - "${WEB_SERVICE_HOST_PORT:-8001}:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    networks:
+      - repair-net
+
+  backend:
+    build: ./backend
+    container_name: repair-backend
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-repair_db}
+      DB_USER: ${POSTGRES_USER:-repair_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-repair_pass}
+      WEB_SERVICE_URL: http://web-service:8001
+    depends_on:
+      db:
+        condition: service_healthy
+      web-service:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_HOST_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    networks:
+      - repair-net
+
+  frontend:
+    build: ./frontend
+    container_name: repair-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    networks:
+      - repair-net
+
+volumes:
+  pgdata:
+
+networks:
+  repair-net:
+    driver: bridge
